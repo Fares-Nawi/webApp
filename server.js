@@ -1,10 +1,11 @@
 const express = require("express");
+const hbs = require('express-hbs');
 const app = express();
 const port = 3000;
 const path = require('path');
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
-  host     : 'localhost',
+  host     : '127.0.0.1',
   user     : 'root',
   password : '',
   database : 'news'
@@ -12,24 +13,55 @@ var connection = mysql.createConnection({
 
 connection.connect();
 
+app.engine('hbs', hbs.express4({
+  defaultLayout: path.join(__dirname, 'views', 'layouts/main.hbs')
+}));
 
+app.set('view engine', '.hbs');
+app.set('views', path.join(__dirname, 'views'));
+
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "views/index.html"));
+  // Fetch data from the database
+  const sql = "SELECT * FROM actualites ORDER BY date DESC";
+
+  connection.query(sql, function (error, results, fields) {
+      if (error) {
+          console.error("Error executing query:", error);
+          res.status(500).send("Internal Server Error");
+          return;
+      }
+
+      hbs.registerHelper('formatDate', function (date) {
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Date(date).toLocaleString(undefined, options);
+    });
+
+
+      // Pass the data to the index.html template
+      res.render('index', { news: results });
+  });
 });
 
 app.get("/add", (req, res) => {
-  res.sendFile(path.join(__dirname, "views/add.html"));
+  res.render('add');
 });
 
 app.get("/addnews", function(req, res) {
     var untitre = req.query.letitre;
     var unedesc = req.query.ladescription;
-    var sql = "insert into actualites(titre, description) values(?, ?)"
+    var sql = "insert into actualites(titre, description) values('" + untitre + "', '" + unedesc + "')"
     
     connection.query(sql, [untitre, unedesc], function(error, results, fields) {
-        res.send(results)
+      if (error) {
+        console.error("Error adding news:", error);
+        res.status(500).send("Error adding news");
+    } else {
+        res.redirect('/');
+         }
     })
+   
 });
 
 app.listen(port, () => {
