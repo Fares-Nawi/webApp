@@ -13,9 +13,7 @@ var connection = mysql.createConnection({
 
 connection.connect();
 
-app.engine('hbs', hbs.express4({
-  defaultLayout: path.join(__dirname, 'views', 'layouts/main.hbs')
-}));
+app.engine('hbs', hbs.express4());
 
 app.set('view engine', '.hbs');
 app.set('views', path.join(__dirname, 'views'));
@@ -23,7 +21,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  // Fetch data from the database
   const sql = "SELECT * FROM actualites ORDER BY date DESC";
 
   connection.query(sql, function (error, results, fields) {
@@ -39,14 +36,13 @@ app.get("/", (req, res) => {
     });
 
 
-      // Pass the data to the index.html template
       res.render('index', { news: results });
   });
 });
 
 app.get("/add", (req, res) => {
   res.render('add');
-});
+}); 
 
 app.get("/addnews", function(req, res) {
     var untitre = req.query.letitre;
